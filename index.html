@@ -1,89 +1,83 @@
-!DOCTYPE html
-html lang=es
-head
-    meta charset=UTF-8
-    meta name=viewport content=width=device-width, initial-scale=1.0
-    titleBuscador de Miniaturastitle
-    style
-        body { font-family sans-serif; max-width 800px; margin 20px auto; padding 0 10px; background-color #f4f4f4; }
-        .search-box { width 100%; padding 15px; font-size 18px; border 2px solid #333; border-radius 5px; margin-bottom 20px; box-sizing border-box;}
-        table { width 100%; border-collapse collapse; background white; box-shadow 0 2px 5px rgba(0,0,0,0.1); }
-        th, td { padding 12px; text-align left; border-bottom 1px solid #ddd; }
-        th { background-color #333; color white; }
-        trhover { background-color #f1f1f1; }
-        .price { font-weight bold; color #d32f2f; text-align right; }
-        .ref { font-family monospace; color #666; font-size 0.9em; }
-        .hidden { display none; }
-    style
-head
-body
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Miniaturas</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 0 10px; background-color: #f4f4f4; }
+        .search-box { width: 100%; padding: 15px; font-size: 18px; border: 2px solid #333; border-radius: 5px; margin-bottom: 20px; box-sizing: border-box;}
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #333; color: white; }
+        tr:hover { background-color: #f1f1f1; }
+        .price { font-weight: bold; color: #d32f2f; text-align: right; }
+        .ref { font-family: monospace; color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
 
-    h1🏰 Buscador de Referenciash1
+    <h1>🏰 Buscador de Referencias</h1>
     
-    input type=text id=buscador class=search-box placeholder=Escribe el nombre o código... (Ej Arqueros)
+    <input type="text" id="buscador" class="search-box" placeholder="Escribe el nombre o código... (Ej: Arqueros)">
 
-    table id=tabla-productos
-        thead
-            tr
-                th width=15%REFth
-                th width=65%NOMBREth
-                th width=20%PRECIOth
-            tr
-        thead
-        tbody id=lista
-            trtd colspan=3Cargando catálogo...tdtr
-        tbody
-    table
+    <table id="tabla-productos">
+        <thead>
+            <tr>
+                <th width="15%">REF</th>
+                <th width="65%">NOMBRE</th>
+                <th width="20%">PRECIO</th>
+            </tr>
+        </thead>
+        <tbody id="lista">
+            <tr><td colspan="3">Cargando catálogo...</td></tr>
+        </tbody>
+    </table>
 
-    script src=httpscdnjs.cloudflare.comajaxlibsPapaParse5.3.0papaparse.min.jsscript
-    script
-         --- CONFIGURACIÓN ---
-         PEGA AQUÍ EL ENLACE DE TU GOOGLE SHEET (El que acaba en .csv)
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script>
+        // --- CONFIGURACIÓN ---
+        // BORRA LO DE ABAJO Y PEGA TU ENLACE CSV ENTRE LAS COMILLAS
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6K9ijeGJPG2eLJKWGkLeIkgRIuREOo4U3VrCOWQRcKk5tcppO2X8RybDr9ko8DK2Q9N-P3ZoMLss/pub?output=csv'; 
-         ---------------------
+        // ---------------------
 
         const lista = document.getElementById('lista');
         const input = document.getElementById('buscador');
         let productos = [];
 
-         Función que carga los datos
         Papa.parse(sheetUrl, {
-            download true,
-            header true,  Esto usa la primera fila como titulos (REF, NAME, PRECIO)
-            complete function(results) {
+            download: true,
+            header: true, 
+            complete: function(results) {
                 productos = results.data;
                 mostrarProductos(productos);
             }
         });
 
-         Función que pinta la tabla
         function mostrarProductos(datos) {
             lista.innerHTML = '';
-            datos.forEach(producto = {
-                 Aseguramos que la fila no esté vacía
+            datos.forEach(producto => {
                 if(producto.NAME && producto.PRECIO) { 
                     const fila = document.createElement('tr');
                     fila.innerHTML = `
-                        td class=ref${producto.REF  ''}td
-                        td${producto.NAME}td
-                        td class=price${producto.PRECIO} €td
+                        <td class="ref">${producto.REF || ''}</td>
+                        <td>${producto.NAME}</td>
+                        <td class="price">${producto.PRECIO} €</td>
                     `;
                     lista.appendChild(fila);
                 }
             });
         }
 
-         El buscador en tiempo real
-        input.addEventListener('keyup', (e) = {
+        input.addEventListener('keyup', (e) => {
             const busqueda = e.target.value.toLowerCase();
-            const filtrados = productos.filter(item = {
-                 Busca en REF o en NAME
-                return (item.NAME && item.NAME.toLowerCase().includes(busqueda))  
+            const filtrados = productos.filter(item => {
+                return (item.NAME && item.NAME.toLowerCase().includes(busqueda)) || 
                        (item.REF && item.REF.toLowerCase().includes(busqueda));
             });
             mostrarProductos(filtrados);
         });
-    script
+    </script>
 
-body
-html
+</body>
+</html>
