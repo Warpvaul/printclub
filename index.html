@@ -3,80 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Miniaturas</title>
+    <title>Buscador de Referencias</title>
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 0 10px; background-color: #f4f4f4; }
-        .search-box { width: 100%; padding: 15px; font-size: 18px; border: 2px solid #333; border-radius: 5px; margin-bottom: 20px; box-sizing: border-box;}
-        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #333; color: white; }
-        tr:hover { background-color: #f1f1f1; }
-        .price { font-weight: bold; color: #d32f2f; text-align: right; }
-        .ref { font-family: monospace; color: #666; font-size: 0.9em; }
+        body { font-family: sans-serif; max-width: 900px; margin: 20px auto; padding: 0 10px; background-color: #f4f4f4; }
+        h1 { text-align: center; color: #333; }
+        .search-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .search-box { width: 100%; padding: 15px; font-size: 18px; border: 2px solid #ddd; border-radius: 5px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
+        .search-box:focus { border-color: #d32f2f; }
+        
+        /* Estilos de la tabla */
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: none; /* Oculta inicialmente */}
+        table.visible { display: table; } /* Clase para mostrarla */
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #333; color: white; text-transform: uppercase; font-size: 0.9em; letter-spacing: 1px; }
+        tr:hover { background-color: #f9f9f9; }
+        
+        /* Estilos de las celdas */
+        .price { font-weight: bold; color: #d32f2f; white-space: nowrap; }
+        .ref { font-family: monospace; color: #555; font-weight: bold; }
+        
+        /* Estilos del botón copiar */
+        .copy-btn {
+            background: none; border: 1px solid #ddd; cursor: pointer; font-size: 1.2em; padding: 5px 10px; border-radius: 4px; transition: all 0.2s;
+        }
+        .copy-btn:hover { background-color: #eee; border-color: #ccc; }
+        .copy-btn:active { transform: scale(0.95); background-color: #d32f2f; color: white; border-color: #d32f2f;}
+        .copy-cell { text-align: center; width: 50px; }
     </style>
 </head>
 <body>
 
     <h1>🏰 Buscador de Referencias</h1>
     
-    <input type="text" id="buscador" class="search-box" placeholder="Escribe el nombre o código... (Ej: Arqueros)">
+    <div class="search-container">
+        <input type="text" id="buscador" class="search-box" placeholder="🔍 Escribe referencia o nombre aquí..." autofocus>
+    </div>
 
     <table id="tabla-productos">
         <thead>
             <tr>
-                <th width="15%">REF</th>
-                <th width="65%">NOMBRE</th>
-                <th width="20%">PRECIO</th>
-            </tr>
+                <th>REF</th>
+                <th>NOMBRE</th>
+                <th>PRECIO</th>
+                <th class="copy-cell"></th> </tr>
         </thead>
         <tbody id="lista">
-            <tr><td colspan="3">Cargando catálogo...</td></tr>
-        </tbody>
+            </tbody>
     </table>
+
+    <div id="toast" style="visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 16px; position: fixed; z-index: 1; left: 50%; bottom: 30px; font-size: 17px;">Copiado al portapapeles</div>
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script>
         // --- CONFIGURACIÓN ---
-        // BORRA LO DE ABAJO Y PEGA TU ENLACE CSV ENTRE LAS COMILLAS
+        // PEGA AQUÍ TU ENLACE CSV (Asegúrate de que es el que acaba en .csv)
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6K9ijeGJPG2eLJKWGkLeIkgRIuREOo4U3VrCOWQRcKk5tcppO2X8RybDr9ko8DK2Q9N-P3ZoMLss/pub?output=csv'; 
         // ---------------------
 
         const lista = document.getElementById('lista');
+        const tabla = document.getElementById('tabla-productos');
         const input = document.getElementById('buscador');
         let productos = [];
 
+        // 1. Carga los datos en memoria (pero no los muestra)
         Papa.parse(sheetUrl, {
             download: true,
             header: true, 
             complete: function(results) {
                 productos = results.data;
-                mostrarProductos(productos);
+                console.log("Datos cargados: " + productos.length + " referencias.");
+                // Ya no llamamos a mostrarProductos aquí
             }
         });
 
-        function mostrarProductos(datos) {
-            lista.innerHTML = '';
-            datos.forEach(producto => {
-                if(producto.NAME && producto.PRECIO) { 
-                    const fila = document.createElement('tr');
-                    fila.innerHTML = `
-                        <td class="ref">${producto.REF || ''}</td>
-                        <td>${producto.NAME}</td>
-                        <td class="price">${producto.PRECIO} €</td>
-                    `;
-                    lista.appendChild(fila);
-                }
-            });
-        }
-
+        // 2. Función que detecta cuando escribes
         input.addEventListener('keyup', (e) => {
-            const busqueda = e.target.value.toLowerCase();
+            const busqueda = e.target.value.toLowerCase().trim();
+
+            // Si el buscador está vacío, limpia la tabla y la oculta
+            if (busqueda === '') {
+                lista.innerHTML = '';
+                tabla.classList.remove('visible');
+                return;
+            }
+
+            // Filtra los resultados
             const filtrados = productos.filter(item => {
                 return (item.NAME && item.NAME.toLowerCase().includes(busqueda)) || 
                        (item.REF && item.REF.toLowerCase().includes(busqueda));
             });
+
+            // Muestra los resultados filtrados
             mostrarProductos(filtrados);
         });
+
+        // 3. Función para pintar la tabla
+        function mostrarProductos(datos) {
+            lista.innerHTML = ''; // Limpia resultados anteriores
+            
+            if (datos.length > 0) {
+                tabla.classList.add('visible'); // Muestra la tabla si hay resultados
+                datos.forEach(producto => {
+                    if(producto.NAME && producto.PRECIO) { 
+                        const fila = document.createElement('tr');
+                        // Preparamos el texto exacto que se copiará
+                        const textoCopia = `${producto.REF || 'SinRef'} - ${producto.NAME} - ${producto.PRECIO}`;
+                        
+                        fila.innerHTML = `
+                            <td class="ref">${producto.REF || ''}</td>
+                            <td>${producto.NAME}</td>
+                            <td class="price">${producto.PRECIO} €</td>
+                            <td class="copy-cell">
+                                <button class="copy-btn" onclick="copiarDato(this, '${textoCopia.replace(/'/g, "\\'")}')" title="Copiar fila">📄</button>
+                            </td>
+                        `;
+                        lista.appendChild(fila);
+                    }
+                });
+            } else {
+                 tabla.classList.remove('visible'); // Oculta la tabla si no hay coincidencias
+            }
+        }
+
+        // 4. Función para copiar al portapapeles
+        function copiarDato(boton, texto) {
+            navigator.clipboard.writeText(texto).then(() => {
+                // Feedback visual simple
+                mostrarToast();
+                const iconoOriginal = boton.innerHTML;
+                boton.innerHTML = '✅';
+                setTimeout(() => { boton.innerHTML = iconoOriginal; }, 1500);
+            });
+        }
+        
+        // Función para mostrar el mensajito de abajo
+        function mostrarToast() {
+          var x = document.getElementById("toast");
+          x.style.visibility = "visible";
+          setTimeout(function(){ x.style.visibility = "hidden"; }, 3000);
+        }
     </script>
 
 </body>
